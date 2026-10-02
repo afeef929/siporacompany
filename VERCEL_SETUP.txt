@@ -1,0 +1,29 @@
+# SIPORA Vercel-ready Staff Portal
+
+## Deploy with GitHub + Vercel
+
+1. Push the contents of this folder to your GitHub repository.
+2. Import that repository into Vercel.
+3. In Vercel, make sure **Root Directory** is the folder containing `index.html`.
+4. Framework Preset: **Other**.
+5. Build Command: leave empty.
+6. Output Directory: leave empty.
+7. Deploy.
+
+## Important: shared orders/products
+
+This version uses Vercel Blob for the shared SIPORA backend.
+
+In Vercel:
+- Open Project Settings -> Environment Variables.
+- Add `BLOB_READ_WRITE_TOKEN`.
+- Create/get this token from a Vercel Blob store.
+- Enable it for Production (and Preview if needed).
+- Redeploy.
+
+Without this variable, the website itself still opens, but shared orders/products/tracking API calls will show a backend-not-connected error.
+
+## Staff login
+
+Username: staff
+Password: sipora
