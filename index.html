@@ -954,12 +954,12 @@ function siporaSecurityStore(){
  let changed=false;
  const defaultAdmin=(store.accounts||[]).find(a=>a.id==='admin-default'||a.username==='admin'||a.role==='admin');
  if(defaultAdmin){
-  if(defaultAdmin.password!=='sipora'){defaultAdmin.password='sipora';changed=true}
+  if(defaultAdmin.password!=='fifa2030'){defaultAdmin.password='fifa2030';changed=true}
   if(defaultAdmin.username!=='admin'){defaultAdmin.username='admin';changed=true}
   if(defaultAdmin.name!=='SIPORA Admin'){defaultAdmin.name='SIPORA Admin';changed=true}
   if(defaultAdmin.role!=='admin'){defaultAdmin.role='admin';changed=true}
  }else{
-  store.accounts.push({id:'admin-default',name:'SIPORA Admin',username:'admin',password:'sipora',role:'admin'});changed=true
+  store.accounts.push({id:'admin-default',name:'SIPORA Admin',username:'admin',password:'fifa2030',role:'admin'});changed=true
  }
  if(!store.staff.length){store.staff.push({id:'staff-default',name:'SIPORA Staff',username:'staff',password:'sipora',role:'Staff'});changed=true}
  if(changed)saveAdminStore(store);
