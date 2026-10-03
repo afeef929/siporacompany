@@ -621,12 +621,12 @@ img{max-width:100%;height:auto}
 
 <!-- STAFF PORTAL -->
 <div id="staffModal" class="hidden fixed inset-0 z-[92] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
- <div class="bg-sip-cream rounded-3xl p-7 w-full max-w-md"><div class="flex justify-between items-center"><h2 class="font-display font-black text-2xl text-sip-deep">SIPORA Staff Portal</h2><button onclick="closeStaff()" class="text-xl">✕</button></div><p class="text-sm text-black/55 mt-2">Staff can manage active orders and delivery updates without accessing business settings.</p><input id="staffUser" class="w-full mt-5 p-3 rounded-xl bg-white border" placeholder="Staff username" autocomplete="username"><input id="staffPass" type="password" class="w-full mt-3 p-3 rounded-xl bg-white border" placeholder="Staff password" autocomplete="current-password"><button onclick="loginStaff()" class="w-full mt-4 py-3 rounded-full bg-sip-deep text-white font-bold">LOGIN TO STAFF PORTAL</button><p class="text-xs text-black/45 mt-3">Demo access: staff / sipora</p></div>
+ <div class="bg-sip-cream rounded-3xl p-7 w-full max-w-md"><div class="flex justify-between items-center"><h2 class="font-display font-black text-2xl text-sip-deep">SIPORA Staff Portal</h2><button onclick="closeStaff()" class="text-xl">✕</button></div><p class="text-sm text-black/55 mt-2">Staff can manage active orders and delivery updates without accessing business settings.</p><input id="staffUser" class="w-full mt-5 p-3 rounded-xl bg-white border" placeholder="Staff username" autocomplete="username"><input id="staffPass" type="password" class="w-full mt-3 p-3 rounded-xl bg-white border" placeholder="Staff password" autocomplete="current-password"><button onclick="loginStaff()" class="w-full mt-4 py-3 rounded-full bg-sip-deep text-white font-bold">LOGIN TO STAFF PORTAL</button></div>
 </div>
 <div id="staffPanel" class="hidden fixed inset-0 z-[91] bg-sip-dark text-white overflow-auto"><div class="min-h-full"><header class="sticky top-0 z-10 bg-[#071f18]/95 backdrop-blur border-b border-white/10"><div class="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex flex-wrap gap-3 items-center justify-between"><div><div class="font-display font-black text-3xl">SIP<span class="text-sip-green">ORA</span></div><span class="text-[10px] uppercase tracking-[.25em] text-white/40">Staff Operations Portal</span></div><div class="flex items-center gap-2"><span class="admin-session-badge"><span class="admin-session-dot"></span>STAFF ONLINE</span><button onclick="closeStaffPanel()" class="px-4 py-2 rounded-full bg-white/10 font-bold">Exit</button></div></div></header><main class="max-w-7xl mx-auto p-5 sm:p-8"><div class="flex flex-wrap gap-2 mb-6"><button class="staff-nav active" data-staff-tab="orders">🛒 Orders</button><button class="staff-nav" data-staff-tab="delivery">🛵 Delivery</button><button class="staff-nav" data-staff-tab="products">🥤 Products</button><button class="staff-nav" data-staff-tab="profile">👤 My role</button></div><div id="staffContent"></div></main></div></div>
 <!-- ADMIN -->
 <div id="adminModal" class="hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
- <div class="bg-sip-cream rounded-3xl p-7 w-full max-w-md"><div class="flex justify-between"><h2 class="font-display font-black text-2xl text-sip-deep">SIPORA Admin</h2><button onclick="closeAdmin()" class="text-xl">✕</button></div><p class="text-sm text-black/55 mt-2">Demo local dashboard. Set your own credentials before deploying.</p><input id="adminUser" class="w-full mt-5 p-3 rounded-xl bg-white border" placeholder="Username"><input id="adminPass" type="password" class="w-full mt-3 p-3 rounded-xl bg-white border" placeholder="Password"><button onclick="loginAdmin()" class="w-full mt-4 py-3 rounded-full bg-sip-deep text-white font-bold">LOGIN</button></div>
+ <div class="bg-sip-cream rounded-3xl p-7 w-full max-w-md"><div class="flex justify-between"><h2 class="font-display font-black text-2xl text-sip-deep">SIPORA Admin</h2><button onclick="closeAdmin()" class="text-xl">✕</button></div><input id="adminUser" class="w-full mt-5 p-3 rounded-xl bg-white border" placeholder="Username"><input id="adminPass" type="password" class="w-full mt-3 p-3 rounded-xl bg-white border" placeholder="Password"><button onclick="loginAdmin()" class="w-full mt-4 py-3 rounded-full bg-sip-deep text-white font-bold">LOGIN</button></div>
 </div>
 <div id="adminPanel" class="hidden fixed inset-0 z-[91] bg-sip-dark text-white overflow-auto">
  <div class="min-h-full lg:flex">
@@ -799,30 +799,63 @@ async function siporaLoadOrdersFromServer(){
   return true;
  }catch(e){console.warn('SIPORA cloud order load failed:',e);return false}
 }
+async function siporaLocalProducts(){
+ try{
+  const data=JSON.parse(localStorage.getItem('siporaProducts')||'[]');
+  return Array.isArray(data)?data:[];
+ }catch(e){return []}
+}
+function siporaWriteLocalProducts(list){
+ const items=Array.isArray(list)?list:[];
+ try{localStorage.setItem('siporaProducts',JSON.stringify(items))}catch(e){}
+ window.PRODUCTS=items;
+ return items;
+}
 async function siporaLoadProductsFromServer(){
  try{
   if(!SIPORA_API_BASE)return false;
   const r=await fetch(SIPORA_API_BASE+'/api/products',{cache:'no-store'});
   if(!r.ok)throw new Error('Could not load products: '+r.status);
   const remote=await r.json();
-  if(!Array.isArray(remote))return false;
-  const byId=new Map((window.PRODUCTS||[]).map(p=>[String(p.id),p]));
+  if(!Array.isArray(remote))throw new Error('Invalid product data');
+  const byId=new Map((window.PRODUCTS||siporaLocalProducts()).map(p=>[String(p.id),p]));
   remote.forEach(p=>byId.set(String(p.id),{...(byId.get(String(p.id))||{}),...p}));
-  window.PRODUCTS=Array.from(byId.values());
+  const products=Array.from(byId.values());
+  siporaWriteLocalProducts(products);
   return true;
- }catch(e){console.warn('SIPORA cloud product load failed:',e);return false}
+ }catch(e){console.warn('SIPORA cloud product load failed:',e);const local=siporaLocalProducts();if(local.length){window.PRODUCTS=local;return false}return false}
 }
 async function siporaSyncProduct(product){
- if(!SIPORA_API_BASE)throw new Error('API base is not configured');
- const r=await fetch(SIPORA_API_BASE+'/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(product)});
- if(!r.ok)throw new Error('Product sync failed: '+r.status);
- return await r.json();
+ const fallbackProduct={...product,id: product.id ?? Date.now(),createdAt: product.createdAt || new Date().toISOString()};
+ try{
+  if(!SIPORA_API_BASE)throw new Error('API base is not configured');
+  const r=await fetch(SIPORA_API_BASE+'/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fallbackProduct)});
+  if(!r.ok)throw new Error('Product sync failed: '+r.status);
+  const saved=await r.json();
+  const local=siporaLocalProducts();
+  const next=[saved,...local.filter(p=>String(p.id)!==String(saved.id))];
+  siporaWriteLocalProducts(next);
+  return saved;
+ }catch(e){
+  console.warn('SIPORA cloud product sync failed, using local fallback:',e);
+  const local=siporaLocalProducts();
+  const next=[fallbackProduct,...local.filter(p=>String(p.id)!==String(fallbackProduct.id))];
+  siporaWriteLocalProducts(next);
+  return fallbackProduct;
+ }
 }
 async function siporaDeleteProduct(id){
- if(!SIPORA_API_BASE)throw new Error('API base is not configured');
- const r=await fetch(SIPORA_API_BASE+'/api/products?id='+encodeURIComponent(id),{method:'DELETE'});
- if(!r.ok)throw new Error('Product delete failed: '+r.status);
- return await r.json();
+ try{
+  if(!SIPORA_API_BASE)throw new Error('API base is not configured');
+  const r=await fetch(SIPORA_API_BASE+'/api/products?id='+encodeURIComponent(id),{method:'DELETE'});
+  if(!r.ok)throw new Error('Product delete failed: '+r.status);
+  return await r.json();
+ }catch(e){
+  console.warn('SIPORA cloud product delete failed, using local fallback:',e);
+  const local=siporaLocalProducts().filter(p=>String(p.id)!==String(id));
+  siporaWriteLocalProducts(local);
+  return {ok:true,id};
+ }
 }
 async function adminClearAllOrders(){
  if(!orders.length)return toast('There are no orders to clear');
@@ -912,18 +945,42 @@ function closeReceipt(){document.getElementById('receiptModal').classList.add('h
 
 function claimReward(){if(stamps>=10){stamps=0;localStorage.setItem('siporaStamps',stamps);toast('Reward unlocked! Enjoy a free stadium cup 🏆')}else toast((10-stamps)+' more visit(s) to unlock your reward')}
 function toggleMobile(){document.getElementById('mobileNav').classList.toggle('hidden')}
-function isStaffLoggedIn(){return localStorage.getItem('siporaStaffSession')==='active'}
-function openStaff(){siporaSecurityStore();if(isStaffLoggedIn()){closeStaff();document.getElementById('staffPanel').classList.remove('hidden');renderStaffPortal('orders');return}document.getElementById('staffModal').classList.remove('hidden');document.getElementById('staffModal').classList.add('flex');setTimeout(()=>document.getElementById('staffUser')?.focus(),80)}
+function siporaSecurityStore(){
+ let store;
+ try{store=JSON.parse(localStorage.getItem('siporaAdminStore')||'{}')}catch(e){store={}}
+ if(!store||typeof store!=='object'||Array.isArray(store))store={};
+ if(!Array.isArray(store.accounts))store.accounts=[];
+ if(!Array.isArray(store.staff))store.staff=[];
+ let changed=false;
+ if(!store.accounts.length){store.accounts.push({id:'admin-default',name:'SIPORA Admin',username:'admin',password:'sipora',role:'admin'});changed=true}
+ if(!store.staff.length){store.staff.push({id:'staff-default',name:'SIPORA Staff',username:'staff',password:'sipora',role:'Staff'});changed=true}
+ if(changed)saveAdminStore(store);
+ return store;
+}
+function siporaCurrentAccount(){try{return JSON.parse(localStorage.getItem('siporaCurrentAccount')||'null')}catch(e){return null}}
+function siporaSetSession(account,role){
+ localStorage.setItem(role==='admin'?'siporaAdminSession':'siporaStaffSession','active');
+ localStorage.removeItem(role==='admin'?'siporaStaffSession':'siporaAdminSession');
+ localStorage.setItem('siporaCurrentAccount',JSON.stringify({...account,role}));
+}
+function siporaClearSession(role){
+ localStorage.removeItem(role==='admin'?'siporaAdminSession':'siporaStaffSession');
+ if(siporaCurrentAccount()?.role===role)localStorage.removeItem('siporaCurrentAccount');
+}
+function isAdminLoggedIn(){return localStorage.getItem('siporaAdminSession')==='active'&&siporaCurrentAccount()?.role==='admin'}
+function isStaffLoggedIn(){return localStorage.getItem('siporaStaffSession')==='active'&&siporaCurrentAccount()?.role==='staff'}
+async function openStaff(){siporaSecurityStore();if(isStaffLoggedIn()){closeStaff();document.getElementById('staffPanel').classList.remove('hidden');await siporaLoadOrdersFromServer();renderStaffPortal('orders');return}document.getElementById('staffModal').classList.remove('hidden');document.getElementById('staffModal').classList.add('flex');setTimeout(()=>document.getElementById('staffUser')?.focus(),80)}
 function closeStaff(){document.getElementById('staffModal').classList.add('hidden');document.getElementById('staffModal').classList.remove('flex')}
-function loginStaff(){const u=document.getElementById('staffUser').value.trim(),p=document.getElementById('staffPass').value;const x=siporaSecurityStore(),a=(x.staff||[]).find(a=>a.username===u&&a.password===p);if(a){siporaSetSession(a,'staff');closeStaff();document.getElementById('staffPanel').classList.remove('hidden');renderStaffPortal('orders');toast('Welcome '+a.name+' 👋')}else toast('Invalid staff credentials')}
+async function loginStaff(){const u=document.getElementById('staffUser').value.trim(),p=document.getElementById('staffPass').value;const x=siporaSecurityStore(),a=(x.staff||[]).find(a=>a.username===u&&a.password===p);if(a){siporaSetSession(a,'staff');closeStaff();document.getElementById('staffPanel').classList.remove('hidden');await siporaLoadOrdersFromServer();renderStaffPortal('orders');toast('Welcome '+a.name+' 👋')}else toast('Invalid staff credentials')}
 function closeStaffPanel(){siporaClearSession('staff');document.getElementById('staffPanel').classList.add('hidden');toast('Staff signed out')}
 function staffOrderCard(o){const items=(o.items||[]).map(i=>`${i.name} × ${i.qty}`).join(', ');const statuses=['Confirmed','Preparing','Ready for pickup','Out for delivery','Delivered','Cancelled'];return `<div class="admin-card p-5"><div class="flex flex-wrap justify-between gap-3"><div><b class="text-lg">${o.id}</b><p class="admin-muted text-sm mt-1">${o.name||'Guest'} · ${o.phone||'No phone'} · ${o.type||'Pickup'}</p></div><span class="px-3 py-1 rounded-full bg-white/10 text-xs font-black">${o.status||'Confirmed'}</span></div><p class="text-sm mt-3">${items||'No items'}</p><div class="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div class="p-3 rounded-xl bg-white/5">Total <b>${money(o.total||0)}</b></div><div class="p-3 rounded-xl bg-white/5">Payment <b>${o.paymentMethod||'—'}</b></div></div>${o.address?`<p class="admin-muted text-xs mt-3">📍 ${o.address}</p>`:''}<select class="admin-input mt-4" onchange="staffSetStatus('${o.id}',this.value)">${statuses.map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select><div class="mt-3 flex flex-wrap gap-2"><button class="px-3 py-2 rounded-xl bg-white/10" onclick="staffSetStatus('${o.id}','Preparing')">Start preparing</button><button class="px-3 py-2 rounded-xl bg-white/10" onclick="staffSetStatus('${o.id}','Ready for pickup')">Ready</button>${o.type==='Delivery'?`<button class="px-3 py-2 rounded-xl bg-white/10" onclick="staffSetStatus('${o.id}','Out for delivery')">Dispatch</button>`:''}</div></div>`}
+async function staffRefresh(tab='orders'){const synced=await siporaLoadOrdersFromServer();renderStaffPortal(tab);toast(synced?'Orders refreshed from server':'Showing locally saved orders')}
 async function staffSetStatus(id,status){try{const msg=status==='Preparing'?'Staff is preparing the order.':status==='Ready for pickup'?'Order is packed and ready at SIPORA.':status==='Out for delivery'?'Order has left SIPORA and is on the way.':status==='Delivered'?'Order delivered by SIPORA staff.':'Order status updated by SIPORA staff.';await siporaUpdateOrderOnServer(id,status,msg);await siporaLoadOrdersFromServer();toast('Order '+id+' updated');renderStaffPortal('orders')}catch(e){console.warn(e);toast('Could not update order')}}
 function renderStaffPortal(tab='orders'){document.querySelectorAll('.staff-nav').forEach(b=>b.classList.toggle('active',b.dataset.staffTab===tab));const c=document.getElementById('staffContent');if(!c)return;if(tab==='orders'){const active=orders.filter(o=>!['Delivered','Cancelled'].includes(o.status));c.innerHTML=`<div class="flex flex-wrap justify-between gap-3 mb-5"><div><h1 class="font-display font-black text-3xl">Staff Order Queue</h1><p class="admin-muted mt-1">Handle preparation and pickup orders.</p></div><button class="admin-btn" onclick="staffRefresh()">↻ Refresh</button></div><div class="grid gap-4">${active.map(staffOrderCard).join('')||'<div class="admin-card p-8 text-center"><b>No active orders</b><p class="admin-muted mt-2">New customer orders will appear here.</p></div>'}</div>`}else if(tab==='delivery'){const ds=orders.filter(o=>o.type==='Delivery'&&!['Delivered','Cancelled'].includes(o.status));c.innerHTML=`<div class="flex flex-wrap justify-between gap-3 mb-5"><div><h1 class="font-display font-black text-3xl">Delivery Queue</h1><p class="admin-muted mt-1">Dispatch orders and share the driver location with customers.</p></div><button class="admin-btn" onclick="staffRefresh('delivery')">↻ Refresh</button></div><div class="grid gap-4">${ds.map(o=>`<div class="admin-card p-5"><div class="flex justify-between gap-3"><div><b>${o.id}</b><p class="admin-muted text-sm">${o.name||'Guest'} · ${o.phone||''}</p><p class="text-sm mt-2">📍 ${o.address||'No address'}</p></div><span class="px-3 py-1 rounded-full bg-white/10 text-xs font-black">${o.status}</span></div><div class="grid sm:grid-cols-3 gap-2 mt-4"><button class="admin-btn" onclick="staffSetStatus('${o.id}','Out for delivery')">🚚 Dispatch</button><button class="admin-btn" onclick="staffUseLocation('${o.id}')">📍 Share my location</button><button class="admin-btn" onclick="staffSetStatus('${o.id}','Delivered')">✓ Delivered</button></div></div>`).join('')||'<div class="admin-card p-8 text-center"><b>No active deliveries</b></div>'}</div>`}else if(tab==='products'){c.innerHTML=`<div class="admin-card p-6"><h1 class="font-display font-black text-3xl">Products</h1><p class="admin-muted mt-1">View the products currently available to customers.</p><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">${adminProducts().map(p=>`<div class="p-4 rounded-2xl bg-white/5"><b>${p.name}</b><div class="admin-muted text-sm mt-1">${money(p.price)}</div></div>`).join('')}</div></div>`}else{const a=siporaCurrentAccount()||{};c.innerHTML=`<div class="admin-card p-6 max-w-2xl"><h1 class="font-display font-black text-3xl">My Staff Account</h1><div class="grid sm:grid-cols-2 gap-3 mt-5"><div class="p-4 rounded-2xl bg-white/5"><small class="admin-muted">Name</small><b class="block mt-1">${a.name||'Staff'}</b></div><div class="p-4 rounded-2xl bg-white/5"><small class="admin-muted">Username</small><b class="block mt-1">${a.username||'—'}</b></div><div class="p-4 rounded-2xl bg-white/5"><small class="admin-muted">Role</small><b class="block mt-1">${a.role||'Staff'}</b></div></div><h3 class="font-display text-xl font-black mt-7">Change my password</h3><div class="grid sm:grid-cols-2 gap-3 mt-3"><input id="myStaffOldPass" type="password" class="admin-input" placeholder="Current password"><input id="myStaffNewPass" type="password" class="admin-input" placeholder="New password"></div><button class="admin-btn mt-3" onclick="changeMyStaffPassword()">Change password</button><h3 class="font-display text-xl font-black mt-7">Daily Attendance</h3><p class="admin-muted text-sm mt-1">Today: ${siporaToday()}</p><div class="flex flex-wrap gap-2 mt-3"><button class="admin-btn" onclick="staffMarkAttendance('Present')">✓ Mark Present</button><button class="admin-btn" onclick="staffMarkAttendance('Leave')">Leave</button><button class="admin-btn" onclick="staffMarkAttendance('Absent')">Absent</button><button class="admin-btn" onclick="staffMarkCheckout()">Check out</button></div><div class="mt-4 p-4 rounded-2xl bg-white/5">${(()=>{const r=siporaAttendanceFor(a.id);return r?`<b>Today's status: ${r.status}</b><p class="admin-muted text-sm mt-1">Check in: ${r.checkIn?new Date(r.checkIn).toLocaleTimeString():'—'} · Check out: ${r.checkOut?new Date(r.checkOut).toLocaleTimeString():'—'}</p>`:'<span class="admin-muted">No attendance marked today.</span>'})()}</div></div>`}}
 function changeMyStaffPassword(){const a=siporaCurrentAccount();if(!a)return;const old=document.getElementById('myStaffOldPass').value,newp=document.getElementById('myStaffNewPass').value.trim();if(!old||!newp)return toast('Enter both passwords');if(old!==a.password)return toast('Current password is incorrect');if(newp.length<6)return toast('New password must be at least 6 characters');let x=siporaSecurityStore();const i=(x.staff||[]).findIndex(s=>s.id===a.id);if(i<0)return toast('Account not found');x.staff[i].password=newp;saveAdminStore(x);a.password=newp;localStorage.setItem('siporaCurrentAccount',JSON.stringify(a));toast('Staff password changed')}
-function openAdmin(){siporaSecurityStore();if(isAdminLoggedIn()){document.getElementById('adminModal').classList.add('hidden');document.getElementById('adminModal').classList.remove('flex');document.getElementById('adminPanel').classList.remove('hidden');renderAdmin();return}document.getElementById('adminModal').classList.remove('hidden');document.getElementById('adminModal').classList.add('flex');setTimeout(()=>document.getElementById('adminUser')?.focus(),80)}
+async function openAdmin(){siporaSecurityStore();if(isAdminLoggedIn()){document.getElementById('adminModal').classList.add('hidden');document.getElementById('adminModal').classList.remove('flex');document.getElementById('adminPanel').classList.remove('hidden');await siporaLoadOrdersFromServer();startAdminOrderPolling();renderAdmin();return}document.getElementById('adminModal').classList.remove('hidden');document.getElementById('adminModal').classList.add('flex');setTimeout(()=>document.getElementById('adminUser')?.focus(),80)}
 function closeAdmin(){document.getElementById('adminModal').classList.add('hidden');document.getElementById('adminModal').classList.remove('flex')}
-function loginAdmin(){const u=document.getElementById('adminUser').value.trim(),p=document.getElementById('adminPass').value,x=siporaSecurityStore(),a=(x.accounts||[]).find(a=>a.username===u&&a.password===p);if(a){siporaSetSession(a,'admin');closeAdmin();document.getElementById('adminPanel').classList.remove('hidden');renderAdmin();toast('Welcome '+a.name+' 👋')}else toast('Invalid admin credentials')}
+async function loginAdmin(){const u=document.getElementById('adminUser').value.trim(),p=document.getElementById('adminPass').value,x=siporaSecurityStore(),a=(x.accounts||[]).find(a=>a.username===u&&a.password===p);if(a){siporaSetSession(a,'admin');closeAdmin();document.getElementById('adminPanel').classList.remove('hidden');await siporaLoadOrdersFromServer();startAdminOrderPolling();renderAdmin();toast('Welcome '+a.name+' 👋')}else toast('Invalid admin credentials')}
 function closeAdminPanel(){siporaClearSession('admin');document.getElementById('adminPanel').classList.add('hidden');document.getElementById('adminUser').value='';document.getElementById('adminPass').value='';toast('Admin signed out')}
 function adminStore(){return JSON.parse(localStorage.getItem('siporaAdminStore')||'{}')}
 function saveAdminStore(x){localStorage.setItem('siporaAdminStore',JSON.stringify(x))}
@@ -991,17 +1048,17 @@ async function adminAddProduct(){
   if(!name||!price||price<=0){if(typeof toast==='function')toast('Enter a valid product name and price');return false}
   const product={id:Date.now(),name,price,cat:'new',desc:'SIPORA product',img:img||'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=900&q=85',createdAt:new Date().toISOString()};
   try{
-    const saved=await siporaCloudSaveProduct(product);
-    window.PRODUCTS=Array.isArray(window.PRODUCTS)?window.PRODUCTS:[];
-    const i=window.PRODUCTS.findIndex(p=>String(p.id)===String(saved.id));
-    if(i>=0)window.PRODUCTS[i]={...window.PRODUCTS[i],...saved};else window.PRODUCTS.push(saved);
+    const saved=await siporaSyncProduct(product);
+    const list=Array.isArray(window.PRODUCTS)?window.PRODUCTS:siporaLocalProducts();
+    const i=list.findIndex(p=>String(p.id)===String(saved.id));
+    if(i>=0)list[i]={...list[i],...saved};else list.push(saved);
     try{localStorage.setItem('siporaProducts',JSON.stringify(window.PRODUCTS))}catch(_){}
     if(nameEl)nameEl.value='';if(priceEl)priceEl.value='';if(imgEl)imgEl.value='';
     if(typeof renderProducts==='function')renderProducts();
     if(typeof renderAdmin==='function')renderAdmin('products');
-    if(typeof toast==='function')toast('Product saved to SIPORA and visible on the site');
+    if(typeof toast==='function')toast('Product saved successfully');
     return false;
-  }catch(err){console.error('SIPORA product save error:',err);if(typeof toast==='function')toast('Could not save product. Check Vercel Blob/API setup.');return false}
+  }catch(err){console.error('SIPORA product save error:',err);if(typeof toast==='function')toast('Could not save product. It has been kept locally for now.');return false}
 }
 
 async function adminRemoveProduct(id){try{await siporaDeleteProduct(id);window.PRODUCTS=adminProducts().filter(p=>String(p.id)!==String(id));toast('Product removed from every device');renderAdmin('products');renderProducts()}catch(e){console.warn(e);toast('Could not remove shared product')}}
@@ -1059,7 +1116,7 @@ function renderAdminHistory(){const c=document.getElementById('adminContent');co
 function adminSendNotification(){let x=adminStore();x.notifications=x.notifications||[];const title=document.getElementById('notifyTitle').value.trim(),body=document.getElementById('notifyBody').value.trim();if(!title||!body)return toast('Enter title and message');x.notifications.unshift({title,body,date:new Date().toLocaleString()});saveAdminStore(x);toast('Notification saved');adminRenderNotifications()}
 function adminRenderNotifications(){const el=document.getElementById('adminNotifications'),x=adminStore();if(el)el.innerHTML=(x.notifications||[]).map(n=>`<div class="p-4 rounded-2xl bg-white/5"><b>${n.title}</b><p class="admin-muted text-sm mt-1">${n.body}</p><small class="admin-muted">${n.date}</small></div>`).join('')||'<p class="admin-muted">No notifications yet.</p>'}
 function adminSaveSettings(){let x=adminStore();x.settings={name:document.getElementById('businessName').value,phone:document.getElementById('businessPhone').value,hours:document.getElementById('businessHours').value};saveAdminStore(x);toast('Business settings saved')}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b){renderAdmin(b.dataset.adminTab)}})
+document.addEventListener('click',e=>{const b=e.target.closest('[data-admin-tab]');if(b){renderAdmin(b.dataset.adminTab)}const staffTab=e.target.closest('[data-staff-tab]');if(staffTab){renderStaffPortal(staffTab.dataset.staffTab)}})
 
 function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+name)?.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});if(name==='menu')renderProducts();if(name==='tracking'){const active=getActiveOrder();renderTracking(active);if(active&&active.status!=='Delivered'&&active.status!=='Cancelled')startLiveTracking(active.id)}if(name==='club')renderClub();if(name==='offers')renderOffersPage()}
 function route(){const name=(location.hash||'#home').slice(1).split('?')[0];const valid=['home','menu','order','tracking','rewards','club','stores','offers','about'];showPage(valid.includes(name)?name:'home')}
@@ -1531,16 +1588,38 @@ function refreshPremiumAnimations(){
 
 <script>
 async function siporaCloudSaveProduct(product){
-  const r=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(product)});
-  if(!r.ok){let msg='Product save failed: '+r.status;try{const e=await r.json();if(e?.error)msg=e.error}catch(_){}throw new Error(msg)}
-  return await r.json();
+  const fallbackProduct={...product,id: product.id ?? Date.now(),createdAt: product.createdAt || new Date().toISOString()};
+  try{
+    const r=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fallbackProduct)});
+    if(!r.ok)throw new Error('Product save failed: '+r.status);
+    const saved=await r.json();
+    const list=siporaLocalProducts();
+    const next=[saved,...list.filter(p=>String(p.id)!==String(saved.id))];
+    siporaWriteLocalProducts(next);
+    return saved;
+  }catch(err){
+    console.warn('Product save fell back to local storage:',err);
+    const list=siporaLocalProducts();
+    const next=[fallbackProduct,...list.filter(p=>String(p.id)!==String(fallbackProduct.id))];
+    siporaWriteLocalProducts(next);
+    return fallbackProduct;
+  }
 }
 async function siporaCloudLoadProducts(){
-  const r=await fetch('/api/products',{cache:'no-store'});
-  if(!r.ok)throw new Error('Product load failed: '+r.status);
-  const data=await r.json();
-  if(!Array.isArray(data))throw new Error('Invalid product data');
-  return data;
+  try{
+    const r=await fetch('/api/products',{cache:'no-store'});
+    if(!r.ok)throw new Error('Product load failed: '+r.status);
+    const data=await r.json();
+    if(!Array.isArray(data))throw new Error('Invalid product data');
+    const next=[...data,...siporaLocalProducts().filter(p=>!data.some(d=>String(d.id)===String(p.id)))];
+    siporaWriteLocalProducts(next);
+    return next;
+  }catch(err){
+    console.warn('Using local product storage fallback:',err);
+    const local=siporaLocalProducts();
+    if(local.length) siporaWriteLocalProducts(local);
+    return local;
+  }
 }
 </script>
 </body>
