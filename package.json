@@ -2,9 +2,6 @@
   "name": "sipora-vercel",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "node server.mjs"
-  },
   "dependencies": {
     "@vercel/blob": "latest"
   }

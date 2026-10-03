@@ -939,7 +939,7 @@ function renderAdmin(tab='dashboard'){
  if(tab==='dashboard')c.innerHTML=`<div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">${adminMetricCard('Total orders',orders.length,'All local orders')}${adminMetricCard('Revenue',money(totalRevenue),'Recorded order totals')}${adminMetricCard('Pending orders',pending,'Needs attention')}${adminMetricCard('Cart items',cart.reduce((a,x)=>a+x.qty,0),'Current customer cart')}</div><div class="grid lg:grid-cols-3 gap-5 mt-5"><div class="admin-card p-6 lg:col-span-2"><h3 class="font-display text-xl font-black">Business overview</h3><div class="grid sm:grid-cols-3 gap-3 mt-5"><div class="p-4 rounded-2xl bg-white/5"><b>${adminCustomers().length}</b><small class="block admin-muted">Customers</small></div><div class="p-4 rounded-2xl bg-white/5"><b>${adminProducts().length}</b><small class="block admin-muted">Products</small></div><div class="p-4 rounded-2xl bg-white/5"><b>${Object.keys(inv).length}</b><small class="block admin-muted">Inventory SKUs</small></div></div></div><div class="admin-card p-6"><h3 class="font-display text-xl font-black">Quick actions</h3><div class="grid gap-2 mt-4"><button class="admin-btn" onclick="renderAdmin('orders')">Manage orders</button><button class="admin-btn" onclick="renderAdmin('inventory')">Check inventory</button><button class="admin-btn" onclick="renderAdmin('notifications')">Send notification</button></div></div></div><div class="admin-card p-6 mt-5"><h3 class="font-display text-xl font-black">Recent orders</h3><div class="mt-4 grid gap-2">${adminOrderRows(8)}</div></div>`;
  else if(tab==='history'){renderAdminHistory()}
  else if(tab==='orders')c.innerHTML=`<div class="admin-card p-6"><div class="flex flex-wrap gap-3 justify-between"><div><h3 class="font-display text-xl font-black">Full order management</h3><p class="admin-muted text-sm">Customer, contact, items, address, payment, total, time and status are shown here. Orders refresh automatically from the shared cloud database.</p></div><div class="flex flex-wrap gap-2"><button class="admin-btn" onclick="adminRefreshOrders()">↻ Refresh orders</button><button class="admin-btn" onclick="renderAdmin('delivery')">Delivery queue</button><button class="admin-btn !bg-red-600 !text-white" onclick="adminClearAllOrders()">🗑 Clear all orders</button></div></div><div class="mt-5 grid gap-3">${adminOrderRows(50,true)}</div></div>`;
- else if(tab==='products')c.innerHTML=`<div class="admin-card p-6"><h3 class="font-display text-xl font-black">Product management</h3><div class="grid sm:grid-cols-4 gap-3 mt-5"><input id="newProductName" class="admin-input" placeholder="Product name"><input id="newProductPrice" type="number" class="admin-input" placeholder="Price"><input id="newProductImage" type="url" class="admin-input" placeholder="Menu image URL"><button type="button" class="admin-btn" onclick="adminAddProduct(); return false;">+ Add product</button></div><p class="admin-muted text-xs mt-2">Add a product image URL and it will appear in the customer Menu. A SIPORA image is used if left blank.</p><div class="mt-5 grid gap-2">${adminProducts().map(p=>`<div class="p-4 rounded-2xl bg-white/5 flex flex-wrap items-center gap-3 justify-between"><span><b>${p.name}</b><small class="block admin-muted">${money(p.price)} · ${p.cat||'drink'}</small></span><button class="px-3 py-2 rounded-xl bg-white/10" onclick="adminRemoveProduct(${p.id})">Remove</button></div>`).join('')}</div></div>`;
+ else if(tab==='products')c.innerHTML=`<div class="admin-card p-6"><h3 class="font-display text-xl font-black">Product management</h3><div class="grid sm:grid-cols-4 gap-3 mt-5"><input id="newProductName" class="admin-input" placeholder="Product name"><input id="newProductPrice" type="number" class="admin-input" placeholder="Price"><input id="newProductImage" type="url" class="admin-input" placeholder="Menu image URL"><button type="button" class="admin-btn" type="button" onclick="adminAddProduct(); return false;">+ Add product</button></div><p class="admin-muted text-xs mt-2">Add a product image URL and it will appear in the customer Menu. A SIPORA image is used if left blank.</p><div class="mt-5 grid gap-2">${adminProducts().map(p=>`<div class="p-4 rounded-2xl bg-white/5 flex flex-wrap items-center gap-3 justify-between"><span><b>${p.name}</b><small class="block admin-muted">${money(p.price)} · ${p.cat||'drink'}</small></span><button class="px-3 py-2 rounded-xl bg-white/10" onclick="adminRemoveProduct(${p.id})">Remove</button></div>`).join('')}</div></div>`;
  else if(tab==='inventory')c.innerHTML=`<div class="admin-card p-6"><h3 class="font-display text-xl font-black">Inventory control</h3><div class="mt-5 grid gap-3">${adminProducts().map(p=>`<div class="p-4 rounded-2xl bg-white/5 grid sm:grid-cols-[1fr_130px_110px] gap-3 items-center"><span><b>${p.name}</b><small class="block admin-muted">SKU #${p.id}</small></span><input id="stock-${p.id}" type="number" min="0" value="${inv[p.id]??0}" class="admin-input"><button class="admin-btn" onclick="adminSetStock(${p.id})">Save stock</button></div>`).join('')}</div></div>`;
  else if(tab==='customers')c.innerHTML=`<div class="admin-card p-6"><h3 class="font-display text-xl font-black">Customer management</h3><div class="mt-5 grid gap-2">${adminCustomers().map((u,i)=>`<div class="p-4 rounded-2xl bg-white/5 flex justify-between"><span><b>${u.name||'Guest'}</b><small class="block admin-muted">${u.email||'No email'}</small></span><span class="admin-muted">${orders.filter(o=>o.email===u.email).length} orders</span></div>`).join('')||'<p class="admin-muted">No customers yet.</p>'}</div></div>`;
  else if(tab==='finance')c.innerHTML=`<div class="grid sm:grid-cols-3 gap-4">${adminMetricCard('Gross sales',money(totalRevenue),'All recorded orders')}${adminMetricCard('Paid orders',orders.filter(o=>o.paymentStatus==='Paid').length,'Payment status')}${adminMetricCard('Cash orders',orders.filter(o=>String(o.paymentMethod||'').toLowerCase().includes('cash')).length,'Cash at store/delivery')}</div><div class="admin-card p-6 mt-5"><h3 class="font-display text-xl font-black">Payment summary</h3><div class="mt-4 grid gap-2">${['UPI','Card','Cash'].map(m=>{const a=orders.filter(o=>String(o.paymentMethod||'').toLowerCase().includes(m.toLowerCase()));return `<div class="flex justify-between p-4 rounded-2xl bg-white/5"><span>${m}</span><b>${a.length} · ${money(a.reduce((s,o)=>s+Number(o.total||0),0))}</b></div>`}).join('')}</div></div>`;
@@ -981,7 +981,29 @@ async function adminSetOrderStatus(id,status,currentSituation){const o=orders.fi
 async function adminSetOrderSituation(id,message){const o=orders.find(x=>x.id===id);if(o)await adminSetOrderStatus(id,o.status,message)}
 
 function adminAdvanceOrder(id){const o=orders.find(x=>x.id===id);if(!o)return;const next={Confirmed:'Preparing',Preparing:'Out for delivery','Out for delivery':'Delivered',Delivered:'Delivered',Cancelled:'Cancelled','Ready for pickup':'Delivered'};adminSetOrderStatus(id,next[o.status]||'Preparing')}
-async function adminAddProduct(){const name=document.getElementById('newProductName').value.trim(),price=Number(document.getElementById('newProductPrice').value),img=(document.getElementById('newProductImage')?.value||'').trim();if(!name||!price)return toast('Enter product name and price');const product={id:Date.now(),name,price,cat:'new',desc:'SIPORA product',img:img||'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=900&q=85'};try{const saved=await siporaSyncProduct(product);window.PRODUCTS=[...adminProducts(),saved];toast('Product saved — visible on every device');renderAdmin('products');renderProducts()}catch(e){console.warn(e);toast('Could not save product to shared website')}}
+async function adminAddProduct(){
+  const nameEl=document.getElementById('newProductName');
+  const priceEl=document.getElementById('newProductPrice');
+  const imgEl=document.getElementById('newProductImage');
+  const name=(nameEl?.value||'').trim();
+  const price=Number(priceEl?.value||0);
+  const img=(imgEl?.value||'').trim();
+  if(!name||!price||price<=0){if(typeof toast==='function')toast('Enter a valid product name and price');return false}
+  const product={id:Date.now(),name,price,cat:'new',desc:'SIPORA product',img:img||'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=900&q=85',createdAt:new Date().toISOString()};
+  try{
+    const saved=await siporaCloudSaveProduct(product);
+    window.PRODUCTS=Array.isArray(window.PRODUCTS)?window.PRODUCTS:[];
+    const i=window.PRODUCTS.findIndex(p=>String(p.id)===String(saved.id));
+    if(i>=0)window.PRODUCTS[i]={...window.PRODUCTS[i],...saved};else window.PRODUCTS.push(saved);
+    try{localStorage.setItem('siporaProducts',JSON.stringify(window.PRODUCTS))}catch(_){}
+    if(nameEl)nameEl.value='';if(priceEl)priceEl.value='';if(imgEl)imgEl.value='';
+    if(typeof renderProducts==='function')renderProducts();
+    if(typeof renderAdmin==='function')renderAdmin('products');
+    if(typeof toast==='function')toast('Product saved to SIPORA and visible on the site');
+    return false;
+  }catch(err){console.error('SIPORA product save error:',err);if(typeof toast==='function')toast('Could not save product. Check Vercel Blob/API setup.');return false}
+}
+
 async function adminRemoveProduct(id){try{await siporaDeleteProduct(id);window.PRODUCTS=adminProducts().filter(p=>String(p.id)!==String(id));toast('Product removed from every device');renderAdmin('products');renderProducts()}catch(e){console.warn(e);toast('Could not remove shared product')}}
 function adminSetStock(id){let x=adminStore(),inv=adminInventory();inv[id]=Math.max(0,Number(document.getElementById('stock-'+id).value||0));x.inventory=inv;saveAdminStore(x);toast('Stock updated');renderAdmin('inventory')}
 function adminProductSales(){const m={};orders.forEach(o=>(o.items||[]).forEach(i=>m[i.name]=(m[i.name]||0)+Number(i.qty||0)));return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([n,q])=>`<div class="flex justify-between p-4 rounded-2xl bg-white/5"><span>${n}</span><b>${q} sold</b></div>`).join('')||'<p class="admin-muted">No sales data yet.</p>'}
@@ -1505,6 +1527,21 @@ function refreshPremiumAnimations(){
   }
   addEventListener('scroll',update,{passive:true}); addEventListener('resize',update); update();
 })();
+</script>
+
+<script>
+async function siporaCloudSaveProduct(product){
+  const r=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(product)});
+  if(!r.ok){let msg='Product save failed: '+r.status;try{const e=await r.json();if(e?.error)msg=e.error}catch(_){}throw new Error(msg)}
+  return await r.json();
+}
+async function siporaCloudLoadProducts(){
+  const r=await fetch('/api/products',{cache:'no-store'});
+  if(!r.ok)throw new Error('Product load failed: '+r.status);
+  const data=await r.json();
+  if(!Array.isArray(data))throw new Error('Invalid product data');
+  return data;
+}
 </script>
 </body>
 </html>
